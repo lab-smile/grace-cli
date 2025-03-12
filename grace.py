@@ -2,6 +2,7 @@ import os
 import sys
 import torch
 import nibabel as nib
+from time import sleep
 from scipy.io import savemat
 from monai.data import MetaTensor
 from monai.networks.nets import UNETR
@@ -16,7 +17,7 @@ def send_progress(message, progress):
     """
     # data = json.dumps({"message": message, "progress": progress})
     # return f"data: {data}\n\n"
-    print(f"\r{message}... {progress}%", flush=True, end="")
+    print(f"\r{message}... {progress}%")
 
 def load_model(model_path, spatial_size, num_classes, device, dataparallel=False, num_gpu=1):
     """
@@ -171,7 +172,7 @@ def grace_predict_single_file(input_path, output_dir="output", model_path="model
 # Example usage
 if __name__ == "__main__":
     if(len(sys.argv) < 2):
-        print("path for input file expected!")
+        print("Path for input file expected!")
     elif(len(sys.argv) > 3):
         print("Too many arguments...!")
     else:
@@ -179,16 +180,20 @@ if __name__ == "__main__":
         output_dir = "outputs"
         model_path = "GRACE.pth"
 
-        grace_predict_single_file(
-            input_path=input_path,
-            output_dir=output_dir,
-            model_path=model_path,
-            spatial_size=(64, 64, 64),
-            num_classes=12,
-            dataparallel=False,
-            num_gpu=1,
-            a_min_value=0,
-            a_max_value=255,
-        )
+        if not os.path.isfile(input_path) or not input_path.endswith('.nii.gz'):
+            print("Error: Input file does not exist or is not a .nii.gz file.")
+    
+        else:
+            grace_predict_single_file(
+                input_path=input_path,
+                output_dir=output_dir,
+                model_path=model_path,
+                spatial_size=(64, 64, 64),
+                num_classes=12,
+                dataparallel=False,
+                num_gpu=1,
+                a_min_value=0,
+                a_max_value=255,
+            )
 
-        send_progress("Done", 100)
+            print("Output files generated...!")
