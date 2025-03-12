@@ -10,10 +10,9 @@ from monai.transforms import Compose, Spacingd, Orientationd, ScaleIntensityRang
 
 def send_progress(message, progress):
     """
-        Helper function to send SSE progress updates
+        Helper function to print SSE progress updates
         @param message: Message about current stage of model prediction (str)
         @param progress: Progress percentage (int)
-        @return: JSON Data: {"message": message, "progress": progress}
     """
     # data = json.dumps({"message": message, "progress": progress})
     # return f"data: {data}\n\n"
