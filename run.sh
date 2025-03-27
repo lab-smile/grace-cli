@@ -12,14 +12,18 @@ if [ ! -f "$1" ] || [[ "$1" != *.nii.gz ]]; then
     exit 1
 fi
 
-# Create and activate Python virtual environment
-echo "Setting up Python virtual environment..."
-python3 -m venv venv
-source venv/bin/activate
-
-# Install dependencies
-echo "Installing dependencies..."
-pip install -r requirements.txt
+# Check if virtual environment exists
+if [ ! -d "venv" ]; then
+    echo "Creating new Python virtual environment..."
+    python3 -m venv venv
+    
+    echo "Installing dependencies..."
+    source venv/bin/activate
+    pip install -r requirements.txt
+else
+    echo "Using existing virtual environment..."
+    source venv/bin/activate
+fi
 
 # Make sure grace.py is executable
 chmod +x grace.py
