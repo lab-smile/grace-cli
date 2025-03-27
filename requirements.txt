@@ -1,4 +1,9 @@
 torch
 nibabel
 scipy
+numpy
 monai
+einops
+torchaudio 
+torchvision 
+werkzeug

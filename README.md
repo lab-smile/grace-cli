@@ -4,7 +4,7 @@ GRACE-CL is a tool for processing NIfTI (.nii.gz) files using [GRACE model](http
 
 ## Prerequisites
 
-- Python 3.x
+- Python 3.1x
 - Ability to create virtual environments (`python3-venv`)
 
 ## Installation
@@ -63,3 +63,4 @@ All required Python packages are listed in `requirements.txt` and will be automa
 - Each run creates a fresh virtual environment to ensure consistency
 - GPU support is available if CUDA is properly configured on your system
 - Change `python` command in `run.sh` if command installed on your machine is `python3.x`
+- If you are running on hipergator make sure you have >=python3.10 loaded, you can load it using `module load python/3.10`
