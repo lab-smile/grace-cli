@@ -2,6 +2,7 @@
 import os
 import sys
 import torch
+import logging
 import nibabel as nib
 from time import sleep
 from scipy.io import savemat
@@ -9,6 +10,18 @@ from monai.data import MetaTensor
 from monai.networks.nets import UNETR
 from monai.inferers import sliding_window_inference
 from monai.transforms import Compose, Spacingd, Orientationd, ScaleIntensityRanged
+
+logging.basicConfig(
+    level=logging.INFO,
+    format="%(asctime)s | %(levelname)s | %(message)s",
+    handlers=[logging.StreamHandler()]
+)
+
+logger=logging.getLogger(__name__)
+
+
+# HOW TO USE:
+# logger.info("Created output directories.")
 
 def send_progress(message, progress):
     """
@@ -18,7 +31,7 @@ def send_progress(message, progress):
     """
     # data = json.dumps({"message": message, "progress": progress})
     # return f"data: {data}\n\n"
-    print(f"\r{message}... {progress}%")
+    logger.info(f"{message}... {progress}%")
 
 def load_model(model_path, spatial_size, num_classes, device, dataparallel=False, num_gpu=1):
     """
