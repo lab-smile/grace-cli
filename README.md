@@ -20,6 +20,11 @@ cd GRACE-CL
 chmod +x run.sh
 ```
 
+3. Download `GRACE.pth` file from the following build to `GRACE-CL` directory.
+```bash
+https://github.com/lab-smile/GRACE/releases/tag/v1.0.1
+```
+
 ## Usage
 
 The tool can be run using the provided shell script:
