@@ -12,6 +12,7 @@ from monai.data import MetaTensor, DataLoader, Dataset, load_decathlon_datalist
 from monai.networks.nets import UNETR
 from monai.inferers import sliding_window_inference
 from monai.transforms import Compose, Spacingd, Orientationd, ScaleIntensityRanged, EnsureTyped, LoadImaged, EnsureChannelFirstd, ResizeWithPadOrCropd, SpatialResample
+from monai.transforms.spatial.functional import spatial_resample
 
 logging.basicConfig(
     level=logging.INFO,
@@ -121,7 +122,7 @@ def preprocess_input(input_path, device, a_min_value, a_max_value):
         meta_tensor = meta_tensor.unsqueeze(0)
 
     # Apply SpatialResample
-    resampler = SpatialResample(spatial_size=(256, 256, 176), mode="bilinear")
+    resampler = spatial_resample(meta_tensor, spatial_size=(256, 256, 176), mode="bilinear")
     resampled_tensor = resampler(meta_tensor)
 
     send_progress("Applying preprocessing transforms...", 40)
