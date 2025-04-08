@@ -267,7 +267,7 @@ def grace_predict_multiple_files(input_path, output_dir="output", model_path="mo
         print(batch.keys()) 
         print(batch.get("image_meta_dict", "NO META FOUND"))
         images = batch["image"].to(device)
-        meta = batch["image_meta_dict"]
+        meta = batch["image"].meta
 
         with torch.no_grad():
             preds = sliding_window_inference(
