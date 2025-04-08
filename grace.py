@@ -123,7 +123,7 @@ def preprocess_input(input_path, device, a_min_value, a_max_value):
         meta_tensor = meta_tensor.unsqueeze(0)
     # Apply SpatialResample
     resampler = spatial_resample(
-        img=image_tensor,
+        img=meta_tensor,
         src_affine=src_affine,
         dst_affine=src_affine,
         spatial_size=(256,256,176),
