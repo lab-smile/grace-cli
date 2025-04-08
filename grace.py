@@ -2,6 +2,7 @@
 import os
 import sys
 import json
+import time
 import torch
 import logging
 import nibabel as nib
@@ -10,7 +11,7 @@ from scipy.io import savemat
 from monai.data import MetaTensor, DataLoader, Dataset, load_decathlon_datalist
 from monai.networks.nets import UNETR
 from monai.inferers import sliding_window_inference
-from monai.transforms import Compose, Spacingd, Orientationd, ScaleIntensityRanged, EnsureTyped, LoadImaged, EnsureChannelFirstd
+from monai.transforms import Compose, Spacingd, Orientationd, ScaleIntensityRanged, EnsureTyped, LoadImaged, EnsureChannelFirstd, ResizeWithPadOrCropd
 
 logging.basicConfig(
     level=logging.INFO,
@@ -96,6 +97,7 @@ def preprocess_datalists(a_min, a_max, target_shape=(64, 64, 64)):
         Spacingd(keys=["image"], pixdim=(1.0, 1.0, 1.0), mode="trilinear"),
         Orientationd(keys=["image"], axcodes="RAS"),
         ScaleIntensityRanged(keys=["image"], a_min=a_min, a_max=a_max, b_min=0.0, b_max=1.0, clip=True),
+        ResizeWithPadOrCropd(keys=["image"], spatial_size=(256, 256, 176)),
         EnsureTyped(keys=["image"], track_meta=True)
     ])
 
@@ -127,6 +129,7 @@ def preprocess_input(input_path, device, a_min_value, a_max_value):
             ),
             Orientationd(keys=["image"], axcodes="RAS"),
             ScaleIntensityRanged(keys=["image"], a_min=a_min_value, a_max=a_max_value, b_min=0.0, b_max=1.0, clip=True),
+            ResizeWithPadOrCropd(keys=["image"], spatial_size=(256, 256, 176)),
         ]
     )
 
@@ -169,7 +172,6 @@ def save_multiple_predictions(predictions, batch_meta, output_dir):
         @param output_dir: Directory to save the output files (str)
         @param base_filename: Base filename for the saved output files (str)
     """
-    send_progress("Post-processing predictions...", 70)
     for i in range(predictions.shape[0]):
         pred_np = torch.argmax(predictions[i], dim=0).cpu().numpy().squeeze()
         isniigz = os.path.basename(batch_meta["filename_or_obj"][i]).endswith(".nii.gz")
@@ -185,7 +187,7 @@ def save_multiple_predictions(predictions, batch_meta, output_dir):
             nib.save(nib.Nifti1Image(pred_np, affine, header), os.path.join(output_dir, f"{filename}_pred_GRACE.nii"))
 
         savemat(os.path.join(output_dir, f"{filename}_pred_GRACE.mat"), {"testimage": pred_np})
-    send_progress("Files saved successfully.", 95)
+
 
 def grace_predict_single_file(input_path, output_dir="output", model_path="models/GRACE.pth",
                        spatial_size=(64, 64, 64), num_classes=12, dataparallel=False, num_gpu=1,
@@ -221,11 +223,15 @@ def grace_predict_single_file(input_path, output_dir="output", model_path="model
 
     # Perform inference
     send_progress("Starting sliding window inference...", 50)
+    start_time = time.time()
     with torch.no_grad():
         predictions = sliding_window_inference(
             image_tensor, spatial_size, sw_batch_size=4, predictor=model, overlap=0.8
         )
-    send_progress("Inference completed successfully.", 75)
+    
+    end_time = time.time()
+    elapsed_time = end_time - start_time
+    send_progress(f"Inference completed successfully in {elapsed_time:.2f} seconds.", 75)
 
     # Save predictions
     save_predictions(predictions, input_img, output_dir, base_filename)
