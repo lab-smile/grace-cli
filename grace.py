@@ -133,7 +133,7 @@ def preprocess_input(input_path, device, a_min_value, a_max_value):
         lazy=False,
         transform_info=None
     )
-
+    resampled_tensor = resampled_tensor.squeeze(0)
     send_progress("Applying preprocessing transforms...", 40)
     
     # Apply MONAI test transforms
