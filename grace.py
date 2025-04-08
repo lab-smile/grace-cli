@@ -85,7 +85,7 @@ def load_model(model_path, spatial_size, num_classes, device, dataparallel=False
     model.load_state_dict(state_dict, strict=False)
     model.eval()
     
-    send_progress("Model loaded successfully.", 25)
+    send_progress("Model loaded successfully.", 40)
     return model
 
 
@@ -259,7 +259,6 @@ def grace_predict_multiple_files(input_path, output_dir="output", model_path="mo
 
     datalist = load_decathlon_datalist(input_path, True, "testing")
     transforms = preprocess_datalists(a_min_value, a_max_value, target_shape=spatial_size)
-    send_progress("Applying Data Transforms...", 35)
     dataset = Dataset(data=datalist, transform=transforms)
     dataloader = DataLoader(dataset, batch_size=batch_size, num_workers=1)
     # Load model
