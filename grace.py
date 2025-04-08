@@ -264,6 +264,8 @@ def grace_predict_multiple_files(input_path, output_dir="output", model_path="mo
     # Perform inference
     send_progress("Starting sliding window inference...", 50)
     for batch in dataloader:
+        print(batch.keys()) 
+        print(batch.get("image_meta_dict", "NO META FOUND"))
         images = batch["image"].to(device)
         meta = batch["image_meta_dict"]
 
