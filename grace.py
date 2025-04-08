@@ -10,7 +10,7 @@ from scipy.io import savemat
 from monai.data import MetaTensor, DataLoader, Dataset, load_decathlon_datalist
 from monai.networks.nets import UNETR
 from monai.inferers import sliding_window_inference
-from monai.transforms import Compose, Spacingd, Orientationd, ScaleIntensityRanged, ResizeWithPadOrCropd, LoadImaged, EnsureTyped
+from monai.transforms import Compose, Spacingd, Orientationd, ScaleIntensityRanged, ToTensord, LoadImaged, AddChanneld
 
 logging.basicConfig(
     level=logging.INFO,
@@ -92,11 +92,11 @@ def load_model(model_path, spatial_size, num_classes, device, dataparallel=False
 def preprocess_datalists(a_min, a_max, target_shape=(64, 64, 64)):
     return Compose([
         LoadImaged(keys=["image"]),
+        AddChanneld(keys=["image"]),
         Spacingd(keys=["image"], pixdim=(1.0, 1.0, 1.0), mode="trilinear"),
         Orientationd(keys=["image"], axcodes="RAS"),
         ScaleIntensityRanged(keys=["image"], a_min=a_min, a_max=a_max, b_min=0.0, b_max=1.0, clip=True),
-        ResizeWithPadOrCropd(keys=["image"], spatial_size=target_shape),
-        EnsureTyped(keys=["image"])
+        ToTensord(keys=["image"])
     ])
 
 def preprocess_input(input_path, device, a_min_value, a_max_value):
