@@ -7,10 +7,9 @@ import logging
 import nibabel as nib
 from time import sleep
 from scipy.io import savemat
-from monai.data import MetaTensor
+from monai.data import MetaTensor, DataLoader, Dataset, load_decathlon_datalist
 from monai.networks.nets import UNETR
 from monai.inferers import sliding_window_inference
-from monai.data import DataLoader, Dataset, load_decathlon_datalist
 from monai.transforms import Compose, Spacingd, Orientationd, ScaleIntensityRanged, ResizeWithPadOrCropd, LoadImaged, EnsureTyped
 
 logging.basicConfig(
