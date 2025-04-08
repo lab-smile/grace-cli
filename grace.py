@@ -169,17 +169,20 @@ def save_multiple_predictions(predictions, batch_meta, output_dir):
         @param output_dir: Directory to save the output files (str)
         @param base_filename: Base filename for the saved output files (str)
     """
-    send_progress("Post-processing predictions...", 80)
+    send_progress("Post-processing predictions...", 70)
     for i in range(predictions.shape[0]):
         pred_np = torch.argmax(predictions[i], dim=0).cpu().numpy().squeeze()
-        
-        filename = os.path.basename(batch_meta["filename_or_obj"][i]).replace(".nii.gz", "")
+        isniigz = os.path.basename(batch_meta["filename_or_obj"][i]).endswith(".nii.gz")
+        filename = os.path.basename(batch_meta["filename_or_obj"][i]).replace(".nii", "").replace(".gz","")
         affine = batch_meta["affine"][i].numpy()
         header = nib.load(batch_meta["filename_or_obj"][i]).header
 
         # Save as .nii.gz
-        send_progress(f"Processing output for {i}th input file...", 85)
-        nib.save(nib.Nifti1Image(pred_np, affine, header), os.path.join(output_dir, f"{filename}_pred_GRACE.nii.gz"))
+        send_progress(f"Processing outputs for {i}th input file...", 85)
+        if isniigz:
+            nib.save(nib.Nifti1Image(pred_np, affine, header), os.path.join(output_dir, f"{filename}_pred_GRACE.nii.gz"))
+        else:
+            nib.save(nib.Nifti1Image(pred_np, affine, header), os.path.join(output_dir, f"{filename}_pred_GRACE.nii"))
 
         savemat(os.path.join(output_dir, f"{filename}_pred_GRACE.mat"), {"testimage": pred_np})
     send_progress("Files saved successfully.", 95)
@@ -227,7 +230,7 @@ def grace_predict_single_file(input_path, output_dir="output", model_path="model
     # Save predictions
     save_predictions(predictions, input_img, output_dir, base_filename)
     
-    send_progress("Processing completed successfully!", 100)
+    send_progress("Processing completed successfully!", 99)
 
 def grace_predict_multiple_files(input_path, output_dir="output", model_path="models/GRACE.pth",
                        spatial_size=(64, 64, 64), num_classes=12, dataparallel=False, num_gpu=1,
@@ -256,6 +259,7 @@ def grace_predict_multiple_files(input_path, output_dir="output", model_path="mo
 
     datalist = load_decathlon_datalist(input_path, True, "testing")
     transforms = preprocess_datalists(a_min_value, a_max_value, target_shape=spatial_size)
+    send_progress("Applying Data Transforms...", 35)
     dataset = Dataset(data=datalist, transform=transforms)
     dataloader = DataLoader(dataset, batch_size=batch_size, num_workers=1)
     # Load model
@@ -264,18 +268,16 @@ def grace_predict_multiple_files(input_path, output_dir="output", model_path="mo
     # Perform inference
     send_progress("Starting sliding window inference...", 50)
     for batch in dataloader:
-        print(batch.keys()) 
-        print(batch.get("image_meta_dict", "NO META FOUND"))
         images = batch["image"].to(device)
         meta = batch["image"].meta
 
         with torch.no_grad():
             preds = sliding_window_inference(
-                images, spatial_size, sw_batch_size=1, predictor=model, overlap=0.8
+                images, spatial_size, sw_batch_size=batch_size, predictor=model, overlap=0.8
             )
         save_multiple_predictions(preds, meta, output_dir)
     
-    send_progress("Processing completed successfully!", 100)
+    send_progress("Processing completed successfully!", 99)
 
 # Example usage
 if __name__ == "__main__":
@@ -290,7 +292,7 @@ if __name__ == "__main__":
     datalist_path = "datalist.json"
 
     if os.path.isdir(input_path):
-        print("Generating datalist...")
+        send_progress("Generating datalist...", 2)
         generate_datalist(input_path)
 
         grace_predict_multiple_files(
@@ -318,4 +320,4 @@ if __name__ == "__main__":
             a_max_value=255,
         )
 
-    print("Output files generated...!")
+    send_progress("Output files generated...!", 100)
