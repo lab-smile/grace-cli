@@ -96,7 +96,7 @@ def preprocess_datalists(a_min, a_max, target_shape=(64, 64, 64)):
         Spacingd(keys=["image"], pixdim=(1.0, 1.0, 1.0), mode="trilinear"),
         Orientationd(keys=["image"], axcodes="RAS"),
         ScaleIntensityRanged(keys=["image"], a_min=a_min, a_max=a_max, b_min=0.0, b_max=1.0, clip=True),
-        ToTensord(keys=["image"])
+        ToTensord(keys=["image"], track_meta=True)
     ])
 
 def preprocess_input(input_path, device, a_min_value, a_max_value):
