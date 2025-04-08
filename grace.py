@@ -122,7 +122,7 @@ def preprocess_input(input_path, device, a_min_value, a_max_value):
     if meta_tensor.ndim == 3:
         meta_tensor = meta_tensor.unsqueeze(0)
     # Apply SpatialResample
-    resampler = spatial_resample(
+    resampled_tensor = spatial_resample(
         img=meta_tensor,
         dst_affine=src_affine,
         spatial_size=(256,256,176),
@@ -133,7 +133,6 @@ def preprocess_input(input_path, device, a_min_value, a_max_value):
         lazy=False,
         transform_info=None
     )
-    resampled_tensor = resampler(meta_tensor)
 
     send_progress("Applying preprocessing transforms...", 40)
     
