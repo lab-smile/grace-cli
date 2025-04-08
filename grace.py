@@ -118,11 +118,22 @@ def preprocess_input(input_path, device, a_min_value, a_max_value):
     # Convert to MetaTensor for MONAI compatibility
     meta_tensor = MetaTensor(image_data, affine=input_img.affine)
 
+    src_affine = meta_tensor.affine
     if meta_tensor.ndim == 3:
         meta_tensor = meta_tensor.unsqueeze(0)
-
     # Apply SpatialResample
-    resampler = spatial_resample(meta_tensor, spatial_size=(256, 256, 176), mode="bilinear")
+    resampler = spatial_resample(
+        img=image_tensor,
+        src_affine=src_affine,
+        dst_affine=src_affine,
+        spatial_size=(256,256,176),
+        mode="bilinear",
+        padding_mode="border",
+        align_corners=False,
+        dtype_pt=torch.float32,
+        lazy=False,
+        transform_info=None
+    )
     resampled_tensor = resampler(meta_tensor)
 
     send_progress("Applying preprocessing transforms...", 40)
