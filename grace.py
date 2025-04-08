@@ -124,7 +124,6 @@ def preprocess_input(input_path, device, a_min_value, a_max_value):
     # Apply SpatialResample
     resampler = spatial_resample(
         img=meta_tensor,
-        src_affine=src_affine,
         dst_affine=src_affine,
         spatial_size=(256,256,176),
         mode="bilinear",
