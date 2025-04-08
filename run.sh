@@ -7,7 +7,7 @@ if [ $# -eq 0 ]; then
 fi
 
 # Check if the input file exists and has .nii.gz extension
-if [[ ! -f "$1" || "$1" != *.nii.gz ]] && [[ ! -d "$1" ]]; then
+if [[ ! -f "$1" ||["$1" != *.nii.gz && "$1" != *.nii ]]] && [[ ! -d "$1" ]]; then
     echo "Error: Input file does not exist or is not a .nii.gz file"
     exit 1
 fi
