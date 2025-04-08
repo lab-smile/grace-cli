@@ -2,12 +2,12 @@
 
 # Check if input file is provided
 if [ $# -eq 0 ]; then
-    echo "Usage: ./run.sh <input_nifti_file.nii.gz>"
+    echo "Usage: ./run.sh <input_nifti_file.nii.gz> or <folder_path_with_nifti_files>"
     exit 1
 fi
 
 # Check if the input file exists and has .nii.gz extension
-if [ ! -f "$1" ] || [[ "$1" != *.nii.gz ]]; then
+if [[ ! -f "$1" || "$1" != *.nii.gz ]] && [[ ! -d "$1" ]]; then
     echo "Error: Input file does not exist or is not a .nii.gz file"
     exit 1
 fi
