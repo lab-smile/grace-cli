@@ -38,7 +38,7 @@ def generate_datalist(folder_path):
     nii_files = [
         {"image": os.path.abspath(os.path.join(folder_path, f))}
         for f in os.listdir(folder_path)
-        if f.endswith(".nii.gz")
+        if f.endswith(".nii.gz") or f.endswith(".nii")
     ]
 
     datalist = {"testing": nii_files}
