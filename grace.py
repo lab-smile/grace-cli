@@ -11,7 +11,7 @@ from scipy.io import savemat
 from monai.data import MetaTensor, DataLoader, Dataset, load_decathlon_datalist
 from monai.networks.nets import UNETR
 from monai.inferers import sliding_window_inference
-from monai.transforms import Compose, Spacingd, Orientationd, ScaleIntensityRanged, EnsureTyped, LoadImaged, EnsureChannelFirstd, ResizeWithPadOrCropd
+from monai.transforms import Compose, Spacingd, Orientationd, ScaleIntensityRanged, EnsureTyped, LoadImaged, EnsureChannelFirstd, ResizeWithPadOrCropd, Rand3DElasticd
 
 logging.basicConfig(
     level=logging.INFO,
@@ -122,6 +122,10 @@ def preprocess_input(input_path, device, a_min_value, a_max_value):
     # Apply MONAI test transforms
     test_transforms = Compose(
         [
+            Rand3DElasticd(
+                keys=["image"],
+                spatial_size=(256,256,176),
+            ),
             Spacingd(
                 keys=["image"],
                 pixdim=(1.0, 1.0, 1.0),
