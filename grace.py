@@ -10,7 +10,7 @@ from scipy.io import savemat
 from monai.data import MetaTensor, DataLoader, Dataset, load_decathlon_datalist
 from monai.networks.nets import UNETR
 from monai.inferers import sliding_window_inference
-from monai.transforms import Compose, Spacingd, Orientationd, ScaleIntensityRanged, ToTensord, LoadImaged, EnsureChannelFirstd
+from monai.transforms import Compose, Spacingd, Orientationd, ScaleIntensityRanged, EnsureTyped, LoadImaged, EnsureChannelFirstd
 
 logging.basicConfig(
     level=logging.INFO,
@@ -96,7 +96,7 @@ def preprocess_datalists(a_min, a_max, target_shape=(64, 64, 64)):
         Spacingd(keys=["image"], pixdim=(1.0, 1.0, 1.0), mode="trilinear"),
         Orientationd(keys=["image"], axcodes="RAS"),
         ScaleIntensityRanged(keys=["image"], a_min=a_min, a_max=a_max, b_min=0.0, b_max=1.0, clip=True),
-        ToTensord(keys=["image"], track_meta=True)
+        EnsureTyped(keys=["image"], track_meta=True)
     ])
 
 def preprocess_input(input_path, device, a_min_value, a_max_value):
@@ -245,7 +245,7 @@ def grace_predict_multiple_files(input_path, output_dir="output", model_path="mo
         @param a_max_value: Maximum intensity value for scaling (int or float)
     """
     os.makedirs(output_dir, exist_ok=True)
-    batch_size = 32
+    batch_size = 10
     # Determine device
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
     if torch.backends.mps.is_available() and not torch.cuda.is_available():
