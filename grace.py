@@ -11,7 +11,7 @@ from scipy.io import savemat
 from monai.data import MetaTensor, DataLoader, Dataset, load_decathlon_datalist
 from monai.networks.nets import UNETR
 from monai.inferers import sliding_window_inference
-from monai.transforms import Compose, Spacingd, Orientationd, ScaleIntensityRanged, EnsureTyped, LoadImaged, EnsureChannelFirstd, ResizeWithPadOrCropd, SpatialResampleD
+from monai.transforms import Compose, Spacingd, Orientationd, ScaleIntensityRanged, EnsureTyped, LoadImaged, EnsureChannelFirstd, ResizeWithPadOrCropd, SpatialResample
 
 logging.basicConfig(
     level=logging.INFO,
@@ -117,6 +117,13 @@ def preprocess_input(input_path, device, a_min_value, a_max_value):
     # Convert to MetaTensor for MONAI compatibility
     meta_tensor = MetaTensor(image_data, affine=input_img.affine)
 
+    if meta_tensor.ndim == 3:
+        meta_tensor = meta_tensor.unsqueeze(0)
+
+    # Apply SpatialResample
+    resampler = SpatialResample(spatial_size=(256, 256, 176), mode="bilinear")
+    resampled_tensor = resampler(meta_tensor)
+
     send_progress("Applying preprocessing transforms...", 40)
     
     # Apply MONAI test transforms
@@ -129,15 +136,10 @@ def preprocess_input(input_path, device, a_min_value, a_max_value):
             ),
             Orientationd(keys=["image"], axcodes="RAS"),
             ScaleIntensityRanged(keys=["image"], a_min=a_min_value, a_max=a_max_value, b_min=0.0, b_max=1.0, clip=True),
-            SpatialResampleD(
-                keys=["image"],
-                spatial_size=(256, 256, 176),
-                mode="bilinear",  # use "nearest" for label images
-            ),
         ]
     )
 
-    data = {"image": meta_tensor}
+    data = {"image": resampled_tensor}
     transformed_data = test_transforms(data)
 
     # Convert to PyTorch tensor
