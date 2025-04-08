@@ -11,7 +11,7 @@ from scipy.io import savemat
 from monai.data import MetaTensor, DataLoader, Dataset, load_decathlon_datalist
 from monai.networks.nets import UNETR
 from monai.inferers import sliding_window_inference
-from monai.transforms import Compose, Spacingd, Orientationd, ScaleIntensityRanged, EnsureTyped, LoadImaged, EnsureChannelFirstd, ResizeWithPadOrCropd, SpatialResample
+from monai.transforms import Compose, Spacingd, Orientationd, ScaleIntensityRanged, EnsureTyped, LoadImaged, EnsureChannelFirstd, Resized
 from monai.transforms.spatial.functional import spatial_resample
 
 logging.basicConfig(
@@ -59,7 +59,7 @@ def load_model(model_path, spatial_size, num_classes, device, dataparallel=False
         @param num_gpu: Number of GPUs to use if dataparallel is True (int)
         @return: Configured model for inference (torch.nn.Module)
     """
-    send_progress("Configuring model...", 10)
+    send_progress("Configuring model", 10)
 
     model = UNETR(
         in_channels=1,
@@ -80,7 +80,7 @@ def load_model(model_path, spatial_size, num_classes, device, dataparallel=False
     #     model = torch.nn.DataParallel(model, device_ids=list(range(num_gpu)))
 
     model = model.to(device)
-    send_progress(f"Loading model weights from {model_path}...", 20)
+    send_progress(f"Loading model weights from {model_path}", 20)
     
     state_dict = torch.load(model_path, map_location=device, weights_only=True)
     state_dict = {k.replace("module.", ""): v for k, v in state_dict.items()}
@@ -91,14 +91,13 @@ def load_model(model_path, spatial_size, num_classes, device, dataparallel=False
     return model
 
 
-def preprocess_datalists(a_min, a_max, target_shape=(64, 64, 64)):
+def preprocess_datalists(a_min, a_max, target_shape=(176,256,256)):
     return Compose([
         LoadImaged(keys=["image"]),
         EnsureChannelFirstd(keys=["image"]),
         Spacingd(keys=["image"], pixdim=(1.0, 1.0, 1.0), mode="trilinear"),
         Orientationd(keys=["image"], axcodes="RAS"),
         ScaleIntensityRanged(keys=["image"], a_min=a_min, a_max=a_max, b_min=0.0, b_max=1.0, clip=True),
-        ResizeWithPadOrCropd(keys=["image"], spatial_size=(256, 256, 176)),
         EnsureTyped(keys=["image"], track_meta=True)
     ])
 
@@ -110,7 +109,7 @@ def preprocess_input(input_path, device, a_min_value, a_max_value):
         @param a_min_value: Minimum intensity value for scaling (int or float)
         @param a_max_value: Maximum intensity value for scaling (int or float)
     """
-    send_progress(f"Loading input image from {input_path}...", 30)
+    send_progress(f"Loading input image from {input_path}", 30)
     input_img = nib.load(input_path)
     image_data = input_img.get_fdata()
     send_progress(f"Input image loaded. Shape: {image_data.shape}", 35)
@@ -118,23 +117,7 @@ def preprocess_input(input_path, device, a_min_value, a_max_value):
     # Convert to MetaTensor for MONAI compatibility
     meta_tensor = MetaTensor(image_data, affine=input_img.affine)
 
-    src_affine = meta_tensor.affine
-    if meta_tensor.ndim == 3:
-        meta_tensor = meta_tensor.unsqueeze(0)
-    # Apply SpatialResample
-    resampled_tensor = spatial_resample(
-        img=meta_tensor,
-        dst_affine=src_affine,
-        spatial_size=(176,256,256),
-        mode="bilinear",
-        padding_mode="border",
-        align_corners=False,
-        dtype_pt=torch.float32,
-        lazy=False,
-        transform_info=None
-    )
-    resampled_tensor = resampled_tensor.squeeze(0)
-    send_progress("Applying preprocessing transforms...", 40)
+    send_progress("Applying preprocessing transforms", 40)
     
     # Apply MONAI test transforms
     test_transforms = Compose(
@@ -149,7 +132,7 @@ def preprocess_input(input_path, device, a_min_value, a_max_value):
         ]
     )
 
-    data = {"image": resampled_tensor}
+    data = {"image": meta_tensor}
     transformed_data = test_transforms(data)
 
     # Convert to PyTorch tensor
@@ -157,7 +140,7 @@ def preprocess_input(input_path, device, a_min_value, a_max_value):
     send_progress(f"Preprocessing complete. Model input shape: {image_tensor.shape}", 45)
     return image_tensor, input_img
 
-def save_predictions(predictions, input_img, output_dir, base_filename):
+def save_predictions(predictions, input_img, output_dir, base_filename, isniigz):
     """
         Save predictions as NIfTI and MAT files.
         @param predictions: Model output predictions (torch.Tensor)
@@ -165,17 +148,21 @@ def save_predictions(predictions, input_img, output_dir, base_filename):
         @param output_dir: Directory to save the output files (str)
         @param base_filename: Base filename for the saved output files (str)
     """
-    send_progress("Post-processing predictions...", 80)
+    send_progress("Post-processing predictions", 80)
     processed_preds = torch.argmax(predictions, dim=1).detach().cpu().numpy().squeeze()
     
     # Save as .nii.gz
-    send_progress("Saving NIfTI file...", 85)
+    send_progress("Saving NIfTI file", 85)
     pred_img = nib.Nifti1Image(processed_preds, affine=input_img.affine, header=input_img.header)
-    nii_save_path = os.path.join(output_dir, f"{base_filename}_pred_GRACE.nii.gz")
+    if isniigz:
+        nii_save_path = os.path.join(output_dir, f"{base_filename}_pred_GRACE.nii.gz")
+    else:
+        nii_save_path = os.path.join(output_dir, f"{base_filename}_pred_GRACE.nii")
+
     nib.save(pred_img, nii_save_path)
     
     # Save as .mat
-    send_progress("Saving MAT file...", 90)
+    send_progress("Saving MAT file", 90)
     mat_save_path = os.path.join(output_dir, f"{base_filename}_pred_GRACE.mat")
     savemat(mat_save_path, {"testimage": processed_preds})
     send_progress("Files saved successfully.", 95)
@@ -196,7 +183,7 @@ def save_multiple_predictions(predictions, batch_meta, output_dir):
         header = nib.load(batch_meta["filename_or_obj"][i]).header
 
         # Save as .nii.gz
-        send_progress(f"Processing outputs for {i}th input file...", 85)
+        send_progress(f"Processing outputs for {i}th input file", 85)
         if isniigz:
             nib.save(nib.Nifti1Image(pred_np, affine, header), os.path.join(output_dir, f"{filename}_pred_GRACE.nii.gz"))
         else:
@@ -221,6 +208,7 @@ def grace_predict_single_file(input_path, output_dir="output", model_path="model
         @param a_max_value: Maximum intensity value for scaling (int or float)
     """
     os.makedirs(output_dir, exist_ok=True)
+    isniigz = os.path.basename(input_path).endswith(".nii.gz")
     base_filename = os.path.basename(input_path).split(".nii")[0]
 
     # Determine device
@@ -238,7 +226,7 @@ def grace_predict_single_file(input_path, output_dir="output", model_path="model
     image_tensor, input_img = preprocess_input(input_path, device, a_min_value, a_max_value)
 
     # Perform inference
-    send_progress("Starting sliding window inference...", 50)
+    send_progress("Starting sliding window inference", 50)
     start_time = time.time()
     with torch.no_grad():
         predictions = sliding_window_inference(
@@ -250,7 +238,7 @@ def grace_predict_single_file(input_path, output_dir="output", model_path="model
     send_progress(f"Inference completed successfully in {elapsed_time:.2f} seconds.", 75)
 
     # Save predictions
-    save_predictions(predictions, input_img, output_dir, base_filename)
+    save_predictions(predictions, input_img, output_dir, base_filename, isniigz)
     
     send_progress("Processing completed successfully!", 99)
 
@@ -287,7 +275,7 @@ def grace_predict_multiple_files(input_path, output_dir="output", model_path="mo
     model = load_model(model_path, spatial_size, num_classes, device, dataparallel, num_gpu)
 
     # Perform inference
-    send_progress("Starting sliding window inference...", 50)
+    send_progress("Starting sliding window inference", 50)
     for batch in dataloader:
         images = batch["image"].to(device)
         meta = batch["image"].meta
@@ -316,7 +304,7 @@ if __name__ == "__main__":
     datalist_path = "datalist.json"
 
     if os.path.isdir(input_path):
-        send_progress("Generating datalist...", 2)
+        send_progress("Generating datalist", 2)
         generate_datalist(input_path)
 
         grace_predict_multiple_files(
@@ -344,4 +332,4 @@ if __name__ == "__main__":
             a_max_value=255,
         )
 
-    send_progress("Output files generated...!", 100)
+    send_progress("Output files generated!", 100)
