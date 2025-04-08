@@ -92,7 +92,7 @@ def load_model(model_path, spatial_size, num_classes, device, dataparallel=False
 def preprocess_datalists(a_min, a_max, target_shape=(64, 64, 64)):
     return Compose([
         LoadImaged(keys=["image"]),
-        Spacingd(keys=["image"], pixdim=(1.0, 1.0, 1.0), mode="bilinear"),
+        Spacingd(keys=["image"], pixdim=(1.0, 1.0, 1.0), mode="trilinear"),
         Orientationd(keys=["image"], axcodes="RAS"),
         ScaleIntensityRanged(keys=["image"], a_min=a_min, a_max=a_max, b_min=0.0, b_max=1.0, clip=True),
         ResizeWithPadOrCropd(keys=["image"], spatial_size=target_shape),
