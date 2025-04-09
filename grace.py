@@ -100,7 +100,7 @@ def conditional_intensity_transform(data, a_min, a_max):
     mean_intensity = data.float().mean().item()
 
     if mean_intensity > 10000:
-        transformer = ClipIntensityPercentilesd(keys=["image"], percentiles=(20, 80))
+        transformer = ClipIntensityPercentilesd(keys=["image"], lower=20, upper=80)
     else:
         transformer = ScaleIntensityRanged(
             keys=["image"],
@@ -110,7 +110,6 @@ def conditional_intensity_transform(data, a_min, a_max):
             b_max=1.0,
             clip=True
         )
-    print(transformer)
     return transformer
 
 
