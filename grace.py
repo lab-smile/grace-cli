@@ -96,22 +96,18 @@ def load_model(model_path, spatial_size, num_classes, device, dataparallel=False
     send_progress("Model loaded successfully.", 40)
     return model
 
-def conditional_intensity_transform(data, a_min, a_max):
-    mean_intensity = data.float().mean().item()
+def conditional_intensity_transform(img_tensor, a_min, a_max):
+    mean_intensity = img_tensor.float().mean().item()
+    img_tensor = MetaTensor(img_tensor, affine=img_tensor.affine)  # Ensure MetaTensor type
+    
     if mean_intensity > 10000:
-        transformer = ClipIntensityPercentilesd(keys=["image"], lower=20, upper=80)
+        result = ClipIntensityPercentilesd(keys=["image"], lower=20, upper=80)({"image": img_tensor})["image"]
     else:
-        transformer = ScaleIntensityRanged(
-            keys=["image"],
-            a_min=a_min,
-            a_max=a_max,
-            b_min=0.0,
-            b_max=1.0,
-            clip=True
-        )
-    result = transformer({"image": data})
-    return result["image"]
+        result = ScaleIntensityRanged(
+            keys=["image"], a_min=a_min, a_max=a_max, b_min=0.0, b_max=1.0, clip=True
+        )({"image": img_tensor})["image"]
 
+    return result
 
 def preprocess_datalists(a_min, a_max, target_shape=(176,256,256)):
     return Compose([
