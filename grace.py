@@ -98,8 +98,6 @@ def load_model(model_path, spatial_size, num_classes, device, dataparallel=False
 
 def conditional_intensity_transform(data, a_min, a_max):
     mean_intensity = data.float().mean().item()
-    print(data)
-    print(mean_intensity)
     if mean_intensity > 10000:
         transformer = ClipIntensityPercentilesd(keys=["image"], lower=20, upper=80)
     else:
@@ -111,11 +109,8 @@ def conditional_intensity_transform(data, a_min, a_max):
             b_max=1.0,
             clip=True
         )
-    data = transformer(data)
-    print(data)
-    print(dir(data))
-    print(data.keys)
-    return data["image"]
+    result = transformer({"image": data})
+    return result["image"]
 
 
 def preprocess_datalists(a_min, a_max, target_shape=(176,256,256)):
