@@ -6,13 +6,10 @@ import time
 import torch
 import logging
 import nibabel as nib
-from time import sleep
-from scipy.io import savemat
-from monai.data import MetaTensor, DataLoader, Dataset, load_decathlon_datalist
 from monai.networks.nets import UNETR
 from monai.inferers import sliding_window_inference
-from monai.transforms import Compose, Spacingd, Orientationd, ScaleIntensityRanged, EnsureTyped, LoadImaged, EnsureChannelFirstd, Resized
-from monai.transforms.spatial.functional import spatial_resample
+from monai.data import MetaTensor, DataLoader, Dataset, load_decathlon_datalist
+from monai.transforms import Compose, Spacingd, Orientationd, ScaleIntensityRanged, EnsureTyped, LoadImaged, EnsureChannelFirstd
 
 logging.basicConfig(
     level=logging.INFO,
@@ -34,7 +31,10 @@ def send_progress(message, progress):
     """
     # data = json.dumps({"message": message, "progress": progress})
     # return f"data: {data}\n\n"
-    logger.info(f"{message}... {progress}%")
+    if progress != ".":
+        logger.info(f"{message}... {progress}%")
+    else:
+        logger.info(f"{message}...")
 
 def generate_datalist(folder_path):
     nii_files = [
@@ -160,11 +160,6 @@ def save_predictions(predictions, input_img, output_dir, base_filename, isniigz)
         nii_save_path = os.path.join(output_dir, f"{base_filename}_pred_GRACE.nii")
 
     nib.save(pred_img, nii_save_path)
-    
-    # Save as .mat
-    send_progress("Saving MAT file", 90)
-    mat_save_path = os.path.join(output_dir, f"{base_filename}_pred_GRACE.mat")
-    savemat(mat_save_path, {"testimage": processed_preds})
     send_progress("Files saved successfully.", 95)
 
 def save_multiple_predictions(predictions, batch_meta, output_dir):
@@ -183,13 +178,11 @@ def save_multiple_predictions(predictions, batch_meta, output_dir):
         header = nib.load(batch_meta["filename_or_obj"][i]).header
 
         # Save as .nii.gz
-        send_progress(f"Processing outputs for {i}th input file", 85)
+        send_progress(f"Processing outputs for input file - {i}", ".")
         if isniigz:
             nib.save(nib.Nifti1Image(pred_np, affine, header), os.path.join(output_dir, f"{filename}_pred_GRACE.nii.gz"))
         else:
             nib.save(nib.Nifti1Image(pred_np, affine, header), os.path.join(output_dir, f"{filename}_pred_GRACE.nii"))
-
-        savemat(os.path.join(output_dir, f"{filename}_pred_GRACE.mat"), {"testimage": pred_np})
 
 
 def grace_predict_single_file(input_path, output_dir="output", model_path="models/GRACE.pth",
@@ -286,7 +279,7 @@ def grace_predict_multiple_files(input_path, output_dir="output", model_path="mo
             )
         end_time = time.time()
         elapsed_time = end_time - start_time
-        send_progress(f"Batch inference completed {elapsed_time:.2f}",".")
+        send_progress(f"Batch inference completed {elapsed_time:.2f} seconds",".")
         save_multiple_predictions(preds, meta, output_dir)
     
     send_progress("Processing completed successfully!", 99)
