@@ -12,6 +12,11 @@ from monai.inferers import sliding_window_inference
 from monai.data import MetaTensor, DataLoader, Dataset, load_decathlon_datalist
 from monai.transforms import Compose, Spacingd, Orientationd, ClipIntensityPercentilesd, ScaleIntensityRanged, EnsureTyped, LoadImaged, EnsureChannelFirstd, CropForegroundd, LambdaD
 
+import warnings
+warnings.filterwarnings("ignore", category=FutureWarning)
+warnings.filterwarnings("ignore", category=UserWarning)
+
+
 logging.basicConfig(
     level=logging.INFO,
     format="%(asctime)s | %(levelname)s | %(message)s",
