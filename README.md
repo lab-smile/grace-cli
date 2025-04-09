@@ -1,6 +1,6 @@
 # GRACE Standalone tool
 
-GRACE-CL is a tool for processing NIfTI (.nii.gz) files using [GRACE model](https://github.com/lab-smile/GRACE)
+GRACE-CL is a tool for processing NIfTI (.nii or .nii.gz) files using [GRACE model](https://github.com/lab-smile/GRACE), batch processing is also supported.
 
 ## Prerequisites
 
@@ -30,33 +30,34 @@ https://github.com/lab-smile/GRACE/releases/tag/v1.0.1
 The tool can be run using the provided shell script:
 
 ```bash
-./run.sh <input_nifti_file.nii.gz>
+./run.sh <input_nifti_file.nii.gz> or <folder_path_to_nifti_images>
 ```
 
 For example:
 ```bash
 ./run.sh sample_image.nii.gz
+./run.sh ./input_folder
 ```
 
 ### What the script does:
 
 1. Creates a Python virtual environment
 2. Installs all required dependencies
-3. Processes the input NIfTI file
-4. Outputs the results in the `outputs` directory
+3. Processes the input NIfTI file(s)
+4. Outputs the results in the `outputs` folder in the current directory.
 
 ### Output
 
 The processed files will be saved in the `outputs` directory with the following naming convention:
-- `<input_filename>_pred_GRACE.nii.gz`: NIfTI format output
-- `<input_filename>_pred_GRACE.mat`: MATLAB format output
+- `<input_filename>_pred_GRACE.nii(.gz)`: NIfTI format output
 
 ## Error Cases
 
 The script will show an error message if:
 - No input file is provided
 - The input file doesn't exist
-- The input file is not a .nii.gz file
+- The input file is not a .nii.gz or .nii file
+- Input is neither a file nor a folder with NIfTI images
 
 ## Dependencies
 
