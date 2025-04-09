@@ -1,6 +1,6 @@
 # GRACE Standalone tool
 
-GRACE-CL is a tool for processing NIfTI (.nii or .nii.gz) files using [GRACE model](https://github.com/lab-smile/GRACE), batch processing is also supported.
+GRACE-CL is a tool for processing NIfTI (.nii or .nii.gz) files using [GRACE model](https://github.com/lab-smile/GRACE), batch processing is also supported but make sure that all images are of same spatial size.
 
 ## Prerequisites
 
