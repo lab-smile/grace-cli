@@ -5,11 +5,12 @@ import json
 import time
 import torch
 import logging
+import numpy as np
 import nibabel as nib
 from monai.networks.nets import UNETR
 from monai.inferers import sliding_window_inference
 from monai.data import MetaTensor, DataLoader, Dataset, load_decathlon_datalist
-from monai.transforms import Compose, Spacingd, Orientationd, ScaleIntensityRanged, EnsureTyped, LoadImaged, EnsureChannelFirstd
+from monai.transforms import Compose, Spacingd, Orientationd, ClipIntensityPercentilesd, ScaleIntensityRanged, EnsureTyped, LoadImaged, EnsureChannelFirstd, CropForegroundd, LambdaD
 
 logging.basicConfig(
     level=logging.INFO,
@@ -90,6 +91,25 @@ def load_model(model_path, spatial_size, num_classes, device, dataparallel=False
     send_progress("Model loaded successfully.", 40)
     return model
 
+def conditional_intensity_transform(data, a_min, a_max):
+    image = data["image"]
+
+    mean_intensity = image.float().mean().item()
+
+    if mean_intensity > 10000:
+        transformer = ClipIntensityPercentilesd(keys=["image"], percentiles=(20, 80))
+    else:
+        transformer = ScaleIntensityRanged(
+            keys=["image"],
+            a_min=a_min,
+            a_max=a_max,
+            b_min=0.0,
+            b_max=1.0,
+            clip=True
+        )
+
+    return transformer(data)
+
 
 def preprocess_datalists(a_min, a_max, target_shape=(176,256,256)):
     return Compose([
@@ -97,11 +117,11 @@ def preprocess_datalists(a_min, a_max, target_shape=(176,256,256)):
         EnsureChannelFirstd(keys=["image"]),
         Spacingd(keys=["image"], pixdim=(1.0, 1.0, 1.0), mode="trilinear"),
         Orientationd(keys=["image"], axcodes="RAS"),
-        ScaleIntensityRanged(keys=["image"], a_min=a_min, a_max=a_max, b_min=0.0, b_max=1.0, clip=True),
+        LambdaD(keys=["image"], func=lambda d: conditional_intensity_transform(d, a_min, a_max)),
         EnsureTyped(keys=["image"], track_meta=True)
     ])
 
-def preprocess_input(input_path, device, a_min_value, a_max_value):
+def preprocess_input(input_path, device, a_min_value, a_max_value, complexity_threshold=10000):
     """
         Load and preprocess the input NIfTI image.
         @param input_path: Path to the input NIfTI image file (str)
@@ -109,10 +129,29 @@ def preprocess_input(input_path, device, a_min_value, a_max_value):
         @param a_min_value: Minimum intensity value for scaling (int or float)
         @param a_max_value: Maximum intensity value for scaling (int or float)
     """
+    def normalize_fixed(data, a_min, a_max):
+        data = np.clip(data, a_min, a_max)
+        return (data - a_min) / (a_max - a_min + 1e-8)
+
+    def normalize_percentile(data, lower=20, upper=80):
+        pmin, pmax = np.percentile(data, [lower, upper])
+        data = np.clip(data, pmin, pmax)
+        return (data - pmin) / (pmax - pmin + 1e-8)
+    
     send_progress(f"Loading input image from {input_path}", 30)
     input_img = nib.load(input_path)
-    image_data = input_img.get_fdata()
+    image_data = input_img.get_fdata().astype(np.float32)
     send_progress(f"Input image loaded. Shape: {image_data.shape}", 35)
+    # image_max = np.max(image_data)
+    # image_min = np.min(image_data)
+    image_mean = np.mean(image_data)
+
+    if image_mean > complexity_threshold:
+        image_data = normalize_percentile(image_data)
+        send_progress(f"Applied percentile normalization (due to mean > {complexity_threshold})", ".")
+    else:
+        image_data = normalize_fixed(image_data, a_min_value, a_max_value)
+
 
     # Convert to MetaTensor for MONAI compatibility
     meta_tensor = MetaTensor(image_data, affine=input_img.affine)
@@ -128,7 +167,7 @@ def preprocess_input(input_path, device, a_min_value, a_max_value):
                 mode=("trilinear"),
             ),
             Orientationd(keys=["image"], axcodes="RAS"),
-            ScaleIntensityRanged(keys=["image"], a_min=a_min_value, a_max=a_max_value, b_min=0.0, b_max=1.0, clip=True),
+            CropForegroundd(keys=["image"], source_key="image"),
         ]
     )
 
