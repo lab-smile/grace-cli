@@ -97,9 +97,7 @@ def load_model(model_path, spatial_size, num_classes, device, dataparallel=False
     return model
 
 def conditional_intensity_transform(data, a_min, a_max):
-    image = data["image"]
-
-    mean_intensity = image.float().mean().item()
+    mean_intensity = data.float().mean().item()
 
     if mean_intensity > 10000:
         transformer = ClipIntensityPercentilesd(keys=["image"], percentiles=(20, 80))
