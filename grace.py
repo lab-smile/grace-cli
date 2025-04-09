@@ -112,7 +112,10 @@ def conditional_intensity_transform(data, a_min, a_max):
             clip=True
         )
     data = transformer(data)
-    return {"image": data}
+    print(data)
+    print(dir(data))
+    print(data.keys)
+    return data["image"]
 
 
 def preprocess_datalists(a_min, a_max, target_shape=(176,256,256)):
