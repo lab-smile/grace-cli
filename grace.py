@@ -96,18 +96,6 @@ def load_model(model_path, spatial_size, num_classes, device, dataparallel=False
     send_progress("Model loaded successfully.", 40)
     return model
 
-def conditional_intensity_transform(img_tensor, a_min, a_max):
-    mean_intensity = img_tensor.float().mean().item()
-    img_tensor = MetaTensor(img_tensor, affine=img_tensor.affine)  # Ensure MetaTensor type
-    
-    if mean_intensity > 10000:
-        result = ClipIntensityPercentilesd(keys=["image"], lower=20, upper=80)({"image": img_tensor})["image"]
-    else:
-        result = ScaleIntensityRanged(
-            keys=["image"], a_min=a_min, a_max=a_max, b_min=0.0, b_max=1.0, clip=True
-        )({"image": img_tensor})["image"]
-
-    return result
 
 def preprocess_datalists(a_min, a_max, target_shape=(176,256,256)):
     return Compose([
@@ -115,8 +103,7 @@ def preprocess_datalists(a_min, a_max, target_shape=(176,256,256)):
         EnsureChannelFirstd(keys=["image"]),
         Spacingd(keys=["image"], pixdim=(1.0, 1.0, 1.0), mode="trilinear"),
         Orientationd(keys=["image"], axcodes="RAS"),
-        Resized(keys=["image"], spatial_size=target_shape, mode="trilinear"),
-        LambdaD(keys=["image"], func=lambda d: conditional_intensity_transform(d, a_min, a_max)),
+        ScaleIntensityRanged(keys=["image"], a_min=a_min, a_max=a_max, b_min=0.0, b_max=1.0, clip=True),
         EnsureTyped(keys=["image"], track_meta=True)
     ])
 
