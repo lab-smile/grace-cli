@@ -58,6 +58,7 @@ The script will show an error message if:
 - The input file doesn't exist
 - The input file is not a .nii.gz or .nii file
 - Input is neither a file nor a folder with NIfTI images
+- `Trying to resize storage that is not resizable` following error will be the result of mismatch in spatial size of batch input files.
 
 ## Dependencies
 
