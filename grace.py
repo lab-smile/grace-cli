@@ -10,7 +10,7 @@ import nibabel as nib
 from monai.networks.nets import UNETR
 from monai.inferers import sliding_window_inference
 from monai.data import MetaTensor, DataLoader, Dataset, load_decathlon_datalist
-from monai.transforms import Compose, Spacingd, Orientationd, ClipIntensityPercentilesd, ScaleIntensityRanged, EnsureTyped, LoadImaged, EnsureChannelFirstd, CropForegroundd, LambdaD, Resized
+from monai.transforms import Compose, Spacingd, Orientationd, ClipIntensityPercentilesd, ScaleIntensityRanged, EnsureTyped, LoadImaged, EnsureChannelFirstd, CropForegroundd, LambdaD, Resized, MapTransform
 
 import warnings
 warnings.filterwarnings("ignore", category=FutureWarning)
@@ -96,14 +96,58 @@ def load_model(model_path, spatial_size, num_classes, device, dataparallel=False
     send_progress("Model loaded successfully.", 40)
     return model
 
+class ConditionalNormalizationd(MapTransform):
+    def __init__(self, keys, a_min, a_max, complexity_threshold=10000):
+        super().__init__(keys)
+        self.a_min = a_min
+        self.a_max = a_max
+        self.threshold = complexity_threshold
 
-def preprocess_datalists(a_min, a_max, target_shape=(176,256,256)):
+    def __call__(self, data):
+        d = dict(data)
+        for key in self.keys:
+            image = d[key]
+
+            # MetaTensor check
+            if isinstance(image, MetaTensor):
+                image_id = image.meta.get("filename_or_obj", "unknown")
+                original_meta = image.meta
+                image_np = image.as_tensor().cpu().numpy()  # Convert to NumPy for percentile ops
+            else:
+                image_id = "unknown"
+                original_meta = None
+                image_np = image  # Assume NumPy
+
+            mean_val = image_np.mean()
+
+            if mean_val > self.threshold:
+                pmin, pmax = np.percentile(image_np, [10, 90])
+                image_np = np.clip(image_np, pmin, pmax)
+                image_np = (image_np - pmin) / (pmax - pmin + 1e-8)
+            else:
+                image_np = np.clip(image_np, self.a_min, self.a_max)
+                image_np = (image_np - self.a_min) / (self.a_max - self.a_min + 1e-8)
+
+            image_np = image_np.astype(np.float32)
+
+            # Re-wrap if originally MetaTensor
+            if original_meta is not None:
+                image = MetaTensor(image_np, meta=original_meta)
+            else:
+                image = image_np
+
+            d[key] = image  # ✅ THIS IS CRITICAL
+        return d
+
+
+def preprocess_datalists(a_min, a_max, target_shape=(176,256,256), complexity_threshold=10000):
     return Compose([
         LoadImaged(keys=["image"]),
-        EnsureChannelFirstd(keys=["image"]),
+        ConditionalNormalizationd(keys=["image"], a_min=a_min, a_max=a_max, complexity_threshold=complexity_threshold),
         Spacingd(keys=["image"], pixdim=(1.0, 1.0, 1.0), mode="trilinear"),
         Orientationd(keys=["image"], axcodes="RAS"),
-        ScaleIntensityRanged(keys=["image"], a_min=a_min, a_max=a_max, b_min=0.0, b_max=1.0, clip=True),
+        CropForegroundd(keys=["image"], source_key="image"),
+        EnsureChannelFirstd(keys=["image"]),
         EnsureTyped(keys=["image"], track_meta=True)
     ])
 
