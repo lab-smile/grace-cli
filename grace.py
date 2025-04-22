@@ -254,7 +254,7 @@ def save_multiple_predictions(predictions, batch_meta, output_dir):
             nib.save(nib.Nifti1Image(pred_np, affine, header), os.path.join(output_dir, f"{filename}_pred_GRACE.nii"))
 
 
-def grace_predict_single_file(input_path, output_dir="output", model_path="models/GRACE.pth",
+def grace_predict_single_file(input_path, output_dir="output", model_path="./GRACE.pth",
                        spatial_size=(64, 64, 64), num_classes=12, dataparallel=False, num_gpu=1,
                        a_min_value=0, a_max_value=255):
     """
@@ -304,7 +304,7 @@ def grace_predict_single_file(input_path, output_dir="output", model_path="model
     
     send_progress("Processing completed successfully!", 99)
 
-def grace_predict_multiple_files(input_path, output_dir="output", model_path="models/GRACE.pth",
+def grace_predict_multiple_files(input_path, output_dir="output", model_path="./GRACE.pth",
                        spatial_size=(64, 64, 64), num_classes=12, dataparallel=False, num_gpu=1,
                        a_min_value=0, a_max_value=255):
     """
@@ -362,7 +362,7 @@ if __name__ == "__main__":
 
     input_path = sys.argv[1]
     output_dir = "outputs"
-    model_path = "GRACE.pth"
+    model_path = "./GRACE.pth"
     datalist_path = "datalist.json"
 
     if os.path.isdir(input_path):
