@@ -344,7 +344,7 @@ def grace_predict_multiple_files(input_path, output_dir="output", model_path="./
         start_time = time.time()
         with torch.no_grad():
             preds = sliding_window_inference(
-                images, spatial_size, sw_batch_size=4, predictor=model, overlap=0.8
+                images, spatial_size, sw_batch_size=10, predictor=model, overlap=0.8
             )
         end_time = time.time()
         elapsed_time = end_time - start_time
