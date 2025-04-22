@@ -247,7 +247,7 @@ def save_multiple_predictions(predictions, batch_meta, output_dir):
         header = nib.load(batch_meta["filename_or_obj"][i]).header
 
         # Save as .nii.gz
-        send_progress(f"Processing outputs for input file - {i}", ".")
+        send_progress(f"Processing outputs for input file - {filename}", ".")
         if isniigz:
             nib.save(nib.Nifti1Image(pred_np, affine, header), os.path.join(output_dir, f"{filename}_pred_GRACE.nii.gz"))
         else:
@@ -320,7 +320,7 @@ def grace_predict_multiple_files(input_path, output_dir="output", model_path="./
         @param a_max_value: Maximum intensity value for scaling (int or float)
     """
     os.makedirs(output_dir, exist_ok=True)
-    batch_size = 10
+    batch_size = 1
     # Determine device
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
     if torch.backends.mps.is_available() and not torch.cuda.is_available():
@@ -344,7 +344,7 @@ def grace_predict_multiple_files(input_path, output_dir="output", model_path="./
         start_time = time.time()
         with torch.no_grad():
             preds = sliding_window_inference(
-                images, spatial_size, sw_batch_size=batch_size, predictor=model, overlap=0.8
+                images, spatial_size, sw_batch_size=4, predictor=model, overlap=0.8
             )
         end_time = time.time()
         elapsed_time = end_time - start_time
