@@ -176,7 +176,14 @@ def preprocess_input(input_path, device, a_min_value, a_max_value, complexity_th
     # image_min = np.min(image_data)
     image_mean = np.mean(image_data)
 
-    if image_max > complexity_threshold:
+    hist_spread = np.percentile(image_np, 98) - np.percentile(image_np, 2)
+    send_progress(f"Image statistics - Max: {image_max}, Mean: {image_mean}, Histogram Spread: {hist_spread}", 35)
+    if hist_spread < 40:  # empirical threshold
+        # Low contrast image – use percentile normalization
+        pmin, pmax = np.percentile(image_np, [5, 95])
+        image_np = np.clip(image_np, pmin, pmax)
+        image_np = (image_np - pmin) / (pmax - pmin + 1e-8)
+    elif image_max > complexity_threshold:
         image_data = normalize_percentile(image_data)
         send_progress(f"Applied percentile normalization (due to max > {complexity_threshold})", ".")
     else:
@@ -201,13 +208,12 @@ def preprocess_input(input_path, device, a_min_value, a_max_value, complexity_th
     )
 
     transformed = test_transforms({"image": meta_tensor})
-    transformed_affine = transformed["image"].affine
     # Convert to PyTorch tensor
     image_tensor = transformed["image"].unsqueeze(0).to(device)
     send_progress(f"Preprocessing complete. Model input shape: {image_tensor.shape}", 45)
-    return image_tensor, input_img, transformed_affine
+    return image_tensor, input_img
 
-def save_predictions(predictions, input_img, transformed_affine, output_dir, base_filename, isniigz):
+def save_predictions(predictions, input_img, output_dir, base_filename, isniigz):
     """
         Save predictions as NIfTI and MAT files.
         @param predictions: Model output predictions (torch.Tensor)
@@ -220,7 +226,7 @@ def save_predictions(predictions, input_img, transformed_affine, output_dir, bas
     
     # Save as .nii.gz
     send_progress("Saving NIfTI file", 85)
-    pred_img = nib.Nifti1Image(processed_preds, affine=transformed_affine, header=input_img.header)
+    pred_img = nib.Nifti1Image(processed_preds, affine=input_img.affine, header=input_img.header)
     if isniigz:
         nii_save_path = os.path.join(output_dir, f"{base_filename}_pred_GRACE.nii.gz")
     else:
@@ -283,7 +289,7 @@ def grace_predict_single_file(input_path, output_dir="output", model_path="./GRA
     model = load_model(model_path, spatial_size, num_classes, device, dataparallel, num_gpu)
 
     # Preprocess input
-    image_tensor, input_img, transformed_affine = preprocess_input(input_path, device, a_min_value, a_max_value)
+    image_tensor, input_img = preprocess_input(input_path, device, a_min_value, a_max_value)
 
     # Perform inference
     send_progress("Starting sliding window inference", 50)
@@ -298,7 +304,7 @@ def grace_predict_single_file(input_path, output_dir="output", model_path="./GRA
     send_progress(f"Inference completed successfully in {elapsed_time:.2f} seconds.", 75)
 
     # Save predictions
-    save_predictions(predictions, input_img, transformed_affine, output_dir, base_filename, isniigz)
+    save_predictions(predictions, input_img, output_dir, base_filename, isniigz)
     
     send_progress("Processing completed successfully!", 99)
 
