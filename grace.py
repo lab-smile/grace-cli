@@ -172,19 +172,18 @@ def preprocess_input(input_path, device, a_min_value, a_max_value, complexity_th
     input_img = nib.load(input_path)
     image_data = input_img.get_fdata().astype(np.float32)
     send_progress(f"Input image loaded. Shape: {image_data.shape}", 35)
-    # image_max = np.max(image_data)
+    image_max = np.max(image_data)
     # image_min = np.min(image_data)
     image_mean = np.mean(image_data)
 
-    if image_mean > complexity_threshold:
+    if image_max > complexity_threshold:
         image_data = normalize_percentile(image_data)
         send_progress(f"Applied percentile normalization (due to mean > {complexity_threshold})", ".")
     else:
         image_data = normalize_fixed(image_data, a_min_value, a_max_value)
 
-
     # Convert to MetaTensor for MONAI compatibility
-    meta_tensor = MetaTensor(image_data[np.newaxis, ...], affine=input_img.affine)
+    meta_tensor = MetaTensor(image_data, affine=input_img.affine)
 
     send_progress("Applying preprocessing transforms", 40)
     
@@ -205,7 +204,7 @@ def preprocess_input(input_path, device, a_min_value, a_max_value, complexity_th
     transformed_data = test_transforms(data)
 
     # Convert to PyTorch tensor
-    image_tensor = transformed_data["image"].unsqueeze(0).to(device)
+    image_tensor = transformed_data["image"].clone().detach().unsqueeze(0).unsqueeze(0).to(device)
     send_progress(f"Preprocessing complete. Model input shape: {image_tensor.shape}", 45)
     return image_tensor, input_img
 
