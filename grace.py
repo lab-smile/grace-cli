@@ -97,7 +97,7 @@ def load_model(model_path, spatial_size, num_classes, device, dataparallel=False
     return model
 
 class ConditionalNormalizationd(MapTransform):
-    def __init__(self, keys, a_min, a_max, complexity_threshold=10000, histogram_threshold=200):
+    def __init__(self, keys, a_min, a_max, complexity_threshold=10000, histogram_threshold=400):
         super().__init__(keys)
         self.a_min = a_min
         self.a_max = a_max
@@ -147,7 +147,7 @@ def preprocess_datalists(a_min, a_max, complexity_threshold=10000):
     return Compose([
         LoadImaged(keys=["image"]),
         ConditionalNormalizationd(keys=["image"], a_min=a_min, a_max=a_max, complexity_threshold=complexity_threshold),
-        Spacingd(keys=["image"], pixdim=(1.0, 1.0, 1.0), mode="trilinear"),
+        Spacingd(keys=["image"], pixdim=(1.0, 1.0, 1.0), mode="bilinear"),
         Orientationd(keys=["image"], axcodes="RAS"),
         CropForegroundd(keys=["image"], source_key="image"),
         EnsureChannelFirstd(keys=["image"]),
@@ -181,7 +181,7 @@ def preprocess_input(input_path, device, a_min_value, a_max_value, complexity_th
 
     hist_spread = np.percentile(image_data, 98) - np.percentile(image_data, 2)
     send_progress(f"Image statistics - Max: {image_max}, Mean: {image_mean}, Histogram Spread: {hist_spread}", 35)
-    if hist_spread < 200:
+    if hist_spread < 400:
         image_data = normalize_percentile(image_data, lower=5, upper=95)
         send_progress(f"Applied percentile normalization (due to low contrast)", ".")
     elif image_max > complexity_threshold:
