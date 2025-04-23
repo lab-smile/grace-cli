@@ -205,7 +205,7 @@ def preprocess_input(input_path, device, a_min_value, a_max_value, complexity_th
     transformed_data = test_transforms(data)
 
     # Convert to PyTorch tensor
-    image_tensor = transformed_data["image"].clone().detach().unsqueeze(0).unsqueeze(0).to(device)
+    image_tensor = transformed_data["image"].unsqueeze(0).to(device)
     send_progress(f"Preprocessing complete. Model input shape: {image_tensor.shape}", 45)
     return image_tensor, input_img
 
