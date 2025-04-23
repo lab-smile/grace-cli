@@ -178,7 +178,7 @@ def preprocess_input(input_path, device, a_min_value, a_max_value, complexity_th
 
     hist_spread = np.percentile(image_data, 98) - np.percentile(image_data, 2)
     send_progress(f"Image statistics - Max: {image_max}, Mean: {image_mean}, Histogram Spread: {hist_spread}", 35)
-    if hist_spread < 40:  # empirical threshold
+    if hist_spread < 200:  # empirical threshold
         # Low contrast image – use percentile normalization
         pmin, pmax = np.percentile(image_np, [5, 95])
         image_np = np.clip(image_np, pmin, pmax)
