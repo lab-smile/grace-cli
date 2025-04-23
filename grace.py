@@ -178,7 +178,7 @@ def preprocess_input(input_path, device, a_min_value, a_max_value, complexity_th
 
     if image_max > complexity_threshold:
         image_data = normalize_percentile(image_data)
-        send_progress(f"Applied percentile normalization (due to mean > {complexity_threshold})", ".")
+        send_progress(f"Applied percentile normalization (due to max > {complexity_threshold})", ".")
     else:
         image_data = normalize_fixed(image_data, a_min_value, a_max_value)
 
@@ -203,7 +203,7 @@ def preprocess_input(input_path, device, a_min_value, a_max_value, complexity_th
     transformed = test_transforms({"image": meta_tensor})
 
     # Convert to PyTorch tensor
-    image_tensor = transformed["image"].clone().detach().unsqueeze(0).to(device)
+    image_tensor = transformed["image"].unsqueeze(0).to(device)
     send_progress(f"Preprocessing complete. Model input shape: {image_tensor.shape}", 45)
     return image_tensor, input_img
 
