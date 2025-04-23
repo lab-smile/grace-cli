@@ -180,9 +180,9 @@ def preprocess_input(input_path, device, a_min_value, a_max_value, complexity_th
     send_progress(f"Image statistics - Max: {image_max}, Mean: {image_mean}, Histogram Spread: {hist_spread}", 35)
     if hist_spread < 200:  # empirical threshold
         # Low contrast image – use percentile normalization
-        pmin, pmax = np.percentile(image_np, [5, 95])
-        image_np = np.clip(image_np, pmin, pmax)
-        image_np = (image_np - pmin) / (pmax - pmin + 1e-8)
+        pmin, pmax = np.percentile(image_data, [5, 95])
+        image_data = np.clip(image_data, pmin, pmax)
+        image_data = (image_data - pmin) / (pmax - pmin + 1e-8)
     elif image_max > complexity_threshold:
         image_data = normalize_percentile(image_data)
         send_progress(f"Applied percentile normalization (due to max > {complexity_threshold})", ".")
