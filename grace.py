@@ -193,9 +193,10 @@ def preprocess_input(input_path, device, a_min_value, a_max_value, complexity_th
             Spacingd(
                 keys=["image"],
                 pixdim=(1.0, 1.0, 1.0),
-                mode=("bilinear"),
+                mode=("trilinear",),
             ),
-            Orientationd(keys=["image"], axcodes="RAS")
+            Orientationd(keys=["image"], axcodes="RAS"),
+            CropForegroundd(keys=["image"], source_key="image"),
         ]
     )
 
