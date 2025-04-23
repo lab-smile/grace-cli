@@ -147,7 +147,7 @@ def preprocess_datalists(a_min, a_max, complexity_threshold=10000):
     return Compose([
         LoadImaged(keys=["image"]),
         ConditionalNormalizationd(keys=["image"], a_min=a_min, a_max=a_max, complexity_threshold=complexity_threshold),
-        Spacingd(keys=["image"], pixdim=(1.0, 1.0, 1.0), mode="bilinear"),
+        Spacingd(keys=["image"], pixdim=(1.0, 1.0, 1.0), mode="trilinear"),
         Orientationd(keys=["image"], axcodes="RAS"),
         CropForegroundd(keys=["image"], source_key="image"),
         EnsureChannelFirstd(keys=["image"]),
@@ -202,7 +202,7 @@ def preprocess_input(input_path, device, a_min_value, a_max_value, complexity_th
             Spacingd(
                 keys=["image"],
                 pixdim=(1.0, 1.0, 1.0),
-                mode=("bilinear",),
+                mode=("trilinear",),
             ),
             Orientationd(keys=["image"], axcodes="RAS"),
             CropForegroundd(keys=["image"], source_key="image"),
