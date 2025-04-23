@@ -183,7 +183,7 @@ def preprocess_input(input_path, device, a_min_value, a_max_value, complexity_th
         image_data = normalize_fixed(image_data, a_min_value, a_max_value)
 
     # Convert to MetaTensor for MONAI compatibility
-    meta_tensor = MetaTensor(image_data, affine=input_img.affine)
+    meta_tensor = MetaTensor(image_data[np.newaxis, ...], affine=input_img.affine)
 
     send_progress("Applying preprocessing transforms", 40)
     
@@ -200,11 +200,10 @@ def preprocess_input(input_path, device, a_min_value, a_max_value, complexity_th
         ]
     )
 
-    data = {"image": meta_tensor}
-    transformed_data = test_transforms(data)
+    transformed = test_transforms({"image": meta_tensor})
 
     # Convert to PyTorch tensor
-    image_tensor = transformed_data["image"].clone().detach().unsqueeze(0).unsqueeze(0).to(device)
+    image_tensor = transformed["image"].clone().detach().unsqueeze(0).to(device)
     send_progress(f"Preprocessing complete. Model input shape: {image_tensor.shape}", 45)
     return image_tensor, input_img
 
