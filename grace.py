@@ -97,11 +97,12 @@ def load_model(model_path, spatial_size, num_classes, device, dataparallel=False
     return model
 
 class ConditionalNormalizationd(MapTransform):
-    def __init__(self, keys, a_min, a_max, complexity_threshold=10000):
+    def __init__(self, keys, a_min, a_max, complexity_threshold=10000, histogram_threshold=200):
         super().__init__(keys)
         self.a_min = a_min
         self.a_max = a_max
         self.threshold = complexity_threshold
+        self.histogram_threshold = histogram_threshold
 
     def __call__(self, data):
         d = dict(data)
@@ -110,18 +111,20 @@ class ConditionalNormalizationd(MapTransform):
 
             # MetaTensor check
             if isinstance(image, MetaTensor):
-                image_id = image.meta.get("filename_or_obj", "unknown")
                 original_meta = image.meta
                 image_np = image.as_tensor().cpu().numpy()  # Convert to NumPy for percentile ops
             else:
-                image_id = "unknown"
                 original_meta = None
-                image_np = image  # Assume NumPy
+                image_np = image
 
             mean_val = image_np.mean()
 
             if mean_val > self.threshold:
                 pmin, pmax = np.percentile(image_np, [10, 90])
+                image_np = np.clip(image_np, pmin, pmax)
+                image_np = (image_np - pmin) / (pmax - pmin + 1e-8)
+            elif (np.percentile(image_np, 98) - np.percentile(image_np, 2)) <= self.histogram_threshold:
+                pmin, pmax = np.percentile(image_np, [5, 95])
                 image_np = np.clip(image_np, pmin, pmax)
                 image_np = (image_np - pmin) / (pmax - pmin + 1e-8)
             else:
@@ -178,16 +181,15 @@ def preprocess_input(input_path, device, a_min_value, a_max_value, complexity_th
 
     hist_spread = np.percentile(image_data, 98) - np.percentile(image_data, 2)
     send_progress(f"Image statistics - Max: {image_max}, Mean: {image_mean}, Histogram Spread: {hist_spread}", 35)
-    if hist_spread < 200:  # empirical threshold
-        # Low contrast image – use percentile normalization
-        pmin, pmax = np.percentile(image_data, [5, 95])
-        image_data = np.clip(image_data, pmin, pmax)
-        image_data = (image_data - pmin) / (pmax - pmin + 1e-8)
+    if hist_spread < 200:
+        iamge_data = normalize_percentile(image_data, lower=5, upper=95)
+        send_progress(f"Applied percentile normalization (due to low contrast)", ".")
     elif image_max > complexity_threshold:
         image_data = normalize_percentile(image_data)
         send_progress(f"Applied percentile normalization (due to max > {complexity_threshold})", ".")
     else:
         image_data = normalize_fixed(image_data, a_min_value, a_max_value)
+        send_progress(f"Applied fixed normalization (min: {a_min_value}, max: {a_max_value})", ".")
 
     # Convert to MetaTensor for MONAI compatibility
     meta_tensor = MetaTensor(image_data[np.newaxis, ...], affine=input_img.affine)
@@ -200,7 +202,7 @@ def preprocess_input(input_path, device, a_min_value, a_max_value, complexity_th
             Spacingd(
                 keys=["image"],
                 pixdim=(1.0, 1.0, 1.0),
-                mode=("trilinear",),
+                mode=("bilinear",),
             ),
             Orientationd(keys=["image"], axcodes="RAS"),
             CropForegroundd(keys=["image"], source_key="image"),
