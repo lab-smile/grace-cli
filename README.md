@@ -32,6 +32,8 @@ chmod +x run.sh
 https://github.com/lab-smile/GRACE/releases/tag/v1.0.1
 ```
 
+4. Change the defaults within `grace.py` file i.e. num_gpu or batch_size etc.
+
 ## Usage
 
 ### Using Local Installation
