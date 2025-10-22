@@ -4,8 +4,15 @@ GRACE CLI is a tool for processing NIfTI (.nii or .nii.gz) files using [GRACE mo
 
 ## Prerequisites
 
+Choose one of the following options:
+
+### Option 1: Local Installation
 - Python 3.1x
 - Ability to create virtual environments (`python3-venv`)
+
+### Option 2: Docker Installation
+- Docker
+- Docker Compose (optional, for easier usage)
 
 ## Installation
 
@@ -27,6 +34,8 @@ https://github.com/lab-smile/GRACE/releases/tag/v1.0.1
 
 ## Usage
 
+### Using Local Installation
+
 The tool can be run using the provided shell script:
 
 ```bash
@@ -38,6 +47,34 @@ For example:
 ./run.sh sample_image.nii.gz
 ./run.sh ./input_folder
 ```
+
+### Using Docker
+
+You can run the tool using Docker in two ways:
+
+#### Using Docker directly:
+
+1. Build the Docker image:
+```bash
+docker build -t grace-cli .
+```
+
+2. Run the container:
+```bash
+docker run -v $(pwd):/app grace-cli <input_nifti_file.nii.gz>
+```
+
+For example:
+```bash
+docker run -v $(pwd):/app grace-cli sample_image.nii.gz
+```
+
+#### Using Docker compose:
+To run the repo with the following command, you need to change the command argument in the `docker-compose.yml` file. (For example: ['python', 'grace.py', 'input.nii'])
+```bash
+docker compose up --build
+```
+
 
 ### What the script does:
 

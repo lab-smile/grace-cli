@@ -1,0 +1,7 @@
+services:
+  grace-cli:
+    build: .
+    volumes:
+      - ./:/app
+      - ./outputs:/app/outputs
+    command: ["--help"]  # Default command to show usage information
