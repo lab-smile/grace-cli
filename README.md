@@ -52,7 +52,7 @@ For example:
 
 ### Using Docker
 
-You can run the tool using Docker in two ways:
+You can run the tool using Docker in three ways:
 
 #### Using Docker directly:
 
@@ -75,6 +75,13 @@ docker run -v $(pwd):/app grace-cli sample_image.nii.gz
 To run the repo with the following command, you need to change the command argument in the `docker-compose.yml` file. (For example: ['python', 'grace.py', 'input.nii'])
 ```bash
 docker compose up --build
+```
+
+#### Using our published docker hub image
+You can use the published docker hub image `nikmk26/grace-cli:latest`
+
+```bash
+docker run -v $(pwd):/app nikmk26/grace-cli:latest <input_nifti_file.nii.gz>
 ```
 
 
