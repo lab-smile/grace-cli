@@ -4,15 +4,9 @@ GRACE CLI is a tool for processing NIfTI (.nii or .nii.gz) files using [GRACE mo
 
 ## Prerequisites
 
-Choose one of the following options:
-
-### Option 1: Local Installation
 - Python 3.1x
 - Ability to create virtual environments (`python3-venv`)
-
-### Option 2: Docker Installation
-- Docker
-- Docker Compose (optional, for easier usage)
+- Docker (Optional)
 
 ## Installation
 
