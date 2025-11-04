@@ -42,7 +42,7 @@ All available options are listed below:
 | ------------------------ | ------- | -------------- | ---------------------------------------------------------------------------------- |
 | `--input_path`           | *str*   | —              | Path to input NIfTI file or a folder (required as the first argument)              |
 | `--output_dir`           | *str*   | `"outputs"`    | Directory to save outputs                                                          |
-| `--model_path`           | *str*   | `"DOMINO.pth"` | Path to model weights file                                                         |
+| `--model_path`           | *str*   | `"GRACE.pth"`  | Path to model weights file                                                         |
 | `--spatial_size`         | *int*   | `64`           | One patch dimension                                                                |
 | `--num_classes`          | *int*   | `12`           | Number of output classes                                                           |
 | `--num_gpu`              | *int*   | `1`            | Number of GPUs to use                                                              |
