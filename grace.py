@@ -330,7 +330,7 @@ def grace_predict(input_path, output_dir="output", model_path="./GRACE.pth",
     # Load model
     model = load_model(model_path, spatial_size, num_classes, device, use, device_ids)
 
-    if os.isdir(input_path):
+    if os.path.isdir(input_path):
         send_progress("Generating datalist", 8)
         generate_datalist(input_path)
 
