@@ -1,28 +1,31 @@
-# Use an official Python runtime as a parent image
-FROM python:3.10-slim
+# Use an official PyTorch CUDA runtime so torch + GPU "just works"
+# (Change the tag if you need a different CUDA / torch combo)
+FROM pytorch/pytorch:2.4.0-cuda12.1-cudnn9-runtime
 
-# Set environment variables
-ENV PYTHONUNBUFFERED=1
+# Prevent Python from writing .pyc files & keep stdout/stderr unbuffered
+ENV PYTHONDONTWRITEBYTECODE=1 \
+    PYTHONUNBUFFERED=1 \
+    PIP_NO_CACHE_DIR=1 
 
 # Set working directory
 WORKDIR /app
 
 # Install system dependencies
-RUN apt-get update && apt-get install -y \
-    gcc \
-    && rm -rf /var/lib/apt/lists/*
+RUN apt-get update && rm -rf /var/lib/apt/lists/*
 
-# Copy requirements first for better cache utilization
-COPY requirements.txt .
+COPY grace.py /app/grace.py
 
 # Install Python dependencies
-RUN pip install --no-cache-dir -r requirements.txt
+RUN pip install numpy nibabel scipy monai einops --quiet --no-cache-dir
 
 # Copy the rest of the application
-COPY . .
+COPY . /app
 
 # Make sure grace.py is executable
-RUN chmod +x grace.py
+RUN chmod +x /app/grace.py
 
-# Set the default command
-ENTRYPOINT ["python", "./grace.py"]
+# Use tini as PID 1 to handle signals cleanly
+ENTRYPOINT ["python3", "./grace.py"]
+
+# This lets users pass arguments directly:
+# e.g. docker run --gpus all grace-cli ./samples/brain.nii.gz

@@ -177,7 +177,7 @@ cython_debug/
 *.pth
 *.nii.gz
 *.nii
-
+*/.DS_Store
 AIMPilot
 outputs
 datalist.json
